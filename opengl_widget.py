@@ -11,7 +11,7 @@ class OpenGLWidget(QGLWidget):
     def __init__(self):
         super().__init__()
         self.setMinimumSize(600, 600)
-        self.shapes = []  # list of (vertices, color, name, is_animated)
+        self.shapes = []  
         self.original_shape = None
         self.original_vertices = None
         self.drawing_mode = None
@@ -23,7 +23,6 @@ class OpenGLWidget(QGLWidget):
         self.curve_combo = None
         self.shape_combo = None
         
-        # Animation variables
         self.animating = False
         self.animation_progress = 0.0
         self.animation_start_shape = []
@@ -55,7 +54,6 @@ class OpenGLWidget(QGLWidget):
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT)
         
-        # Draw grid
         glColor3f(0.9, 0.9, 0.9)
         glBegin(GL_LINES)
         for x in range(0, 801, 50):
@@ -66,7 +64,6 @@ class OpenGLWidget(QGLWidget):
             glVertex2f(800, y)
         glEnd()
 
-        # Draw all shapes
         for item in self.shapes:
             if len(item) >= 4:
                 vertices, color, name, animated = item[0], item[1], item[2], item[3]
@@ -85,21 +82,18 @@ class OpenGLWidget(QGLWidget):
                 glVertex2f(v[0], v[1])
             glEnd()
             
-            # Close the shape if it's a polygon
             if name in ["Triangle", "Rectangle", "Pentagon"] and len(vertices) > 2:
                 glBegin(GL_LINES)
                 glVertex2f(vertices[-1][0], vertices[-1][1])
                 glVertex2f(vertices[0][0], vertices[0][1])
                 glEnd()
             
-            # For circles, close properly
             if name == "Circle" and len(vertices) > 2:
                 glBegin(GL_LINES)
                 glVertex2f(vertices[-1][0], vertices[-1][1])
                 glVertex2f(vertices[0][0], vertices[0][1])
                 glEnd()
 
-        # Draw clipping window
         if self.clip_window:
             glColor3f(1, 0, 0)
             glLineWidth(2)
@@ -112,7 +106,6 @@ class OpenGLWidget(QGLWidget):
             glEnd()
             glLineWidth(1)
 
-        # Draw curve control points
         if self.drawing_mode == 'curve' or self.waiting_for_curve:
             glColor3f(0, 0, 1)
             glBegin(GL_POINTS)
@@ -127,7 +120,6 @@ class OpenGLWidget(QGLWidget):
                     glVertex2f(p[0], p[1])
                 glEnd()
 
-        # Draw temporary line
         if self.temp_start and self.drawing_mode == 'clip':
             glColor3f(1, 0.5, 0)
             glBegin(GL_LINE_STRIP)
@@ -158,7 +150,6 @@ class OpenGLWidget(QGLWidget):
                 y = y1 + (y2 - y1) * t
                 current_shape.append((x, y))
             
-            # Update animated shape
             for i in range(len(self.shapes) - 1, -1, -1):
                 if len(self.shapes[i]) >= 4 and self.shapes[i][3]:
                     self.shapes[i] = [current_shape, (1, 0.5, 0), "Animating", True]
@@ -274,7 +265,7 @@ class OpenGLWidget(QGLWidget):
                 (cx - size, cy + size/2),
                 (cx - size, cy - size/2)
             ]
-        else:  # Pentagon
+        else:  
             vertices = []
             for i in range(6):
                 angle = math.radians(90 - i * 72)
@@ -345,10 +336,8 @@ class OpenGLWidget(QGLWidget):
               
           transformed.append((nx, ny))
       
-      # Remove any existing transformed or animated shapes
       self.remove_transformed_shapes()
       
-      # Add the transformed shape
       self.shapes.append([transformed, (1, 0, 0), "Transformed", False])
       self.log_signal.emit(f"Applied {trans_type}")
       self.update()
@@ -358,12 +347,9 @@ class OpenGLWidget(QGLWidget):
       for item in self.shapes:
           if len(item) >= 3:
               name = item[2]
-              # Keep only original shapes (black/green/blue), remove transformed (red) and animated
               if name not in ["Transformed", "Animating", "Clipped"]:
                   new_shapes.append(item)
       self.shapes = new_shapes
-      
-      # Also stop any ongoing animation
       if self.animating:
           self.animation_timer.stop()
           self.animating = False
@@ -375,7 +361,7 @@ class OpenGLWidget(QGLWidget):
           self.log_signal.emit("Reset to original shape")
       else:
           self.log_signal.emit("No original shape to reset")
-          
+
     def start_animation(self, start_shape, end_shape):
         self.animation_start_shape = start_shape[:]
         self.animation_end_shape = end_shape[:]
@@ -411,22 +397,15 @@ class OpenGLWidget(QGLWidget):
             self.log_signal.emit("Shape completely outside clip window")
         self.update()
 
-    # ========== SAVE/LOAD METHODS ==========
-    
     def get_shapes_data(self):
-        """Export current shapes to serializable format"""
         shapes_data = []
         for item in self.shapes:
-            # Handle different possible tuple lengths
             if len(item) >= 3:
                 vertices = item[0]
                 color = item[1]
                 name = item[2]
                 animated = item[3] if len(item) > 3 else False
-                
-                # Don't save animated or temporary shapes
                 if not animated and name not in ["Animating"]:
-                    # Convert vertices to list of lists for JSON serialization
                     serializable_vertices = []
                     for v in vertices:
                         serializable_vertices.append([float(v[0]), float(v[1])])
@@ -453,7 +432,6 @@ class OpenGLWidget(QGLWidget):
             
             self.shapes.append([vertices, color, name, False])
             
-            # Store the first shape as original for transformations
             if len(self.shapes) == 1:
                 self.original_shape = vertices[:]
                 self.original_vertices = vertices[:]
@@ -464,7 +442,6 @@ class OpenGLWidget(QGLWidget):
         self.update()
         self.log_signal.emit(f"Loaded {len(shapes_data)} shapes")
 
-    # ========== HOLLOW CIRCLE ALGORITHMS ==========
     
     def midpoint_circle_hollow(self, cx, cy, r):
         points = []
@@ -520,7 +497,6 @@ class OpenGLWidget(QGLWidget):
         ordered = sorted(points, key=get_angle)
         return ordered
 
-    # ========== LINE ALGORITHMS ==========
     
     def dda_line(self, x1, y1, x2, y2):
         points = []
@@ -559,7 +535,6 @@ class OpenGLWidget(QGLWidget):
                 y1 += sy
         return points
 
-    # ========== CURVE ALGORITHMS ==========
     
     def bezier_curve(self, points, num_segments=200):
         vertices = []
@@ -603,7 +578,6 @@ class OpenGLWidget(QGLWidget):
                 
         return vertices
 
-    # ========== CLIPPING ALGORITHMS ==========
     
     def compute_region_code(self, x, y, xmin, ymin, xmax, ymax):
         code = 0
@@ -739,7 +713,6 @@ class OpenGLWidget(QGLWidget):
                 unique.append(p)
         return unique
 
-    # ========== HELPER METHODS ==========
     
     def get_center(self, vertices):
         if not vertices:
