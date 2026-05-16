@@ -1,0 +1,13 @@
+# Computer Graphics Project Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core GUI and OpenGL
+PyQt5>=5.15.0
+PyOpenGL>=3.1.0
+PyOpenGL_accelerate>=3.1.0
+
+# Performance Charts (Optional - for performance tab)
+matplotlib>=3.3.0
+
+# Additional utilities (optional)
+numpy>=1.19.0
